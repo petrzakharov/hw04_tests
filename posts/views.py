@@ -68,17 +68,20 @@ def profile(request, username):
 def post_view(request, username, post_id):
     user = get_object_or_404(User, username=username)
     post = get_object_or_404(user.posts, pk=post_id)
-    return render(request, 'post.html', {'post': post})
+    return render(request, 'post.html', {'post': post,
+                                         'author': user})
+
 
 @login_required
 def post_edit(request, username, post_id):
     user = get_object_or_404(User, username=username)
     post = get_object_or_404(user.posts, pk=post_id)
     if post.author != request.user:
-        return HttpResponseForbidden()
+        return redirect('post', username, post_id)
     form = PostForm(request.POST or None, instance=post)
     if form.is_valid():
         form.save()
-        return redirect("index")
+        return redirect('post', username, post_id)
     return render(request, 'new.html', {'form': form,
-                                        'edit': True})
+                                        'is_edit': True,
+                                        'post': post})
