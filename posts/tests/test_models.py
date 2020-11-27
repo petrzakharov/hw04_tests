@@ -16,7 +16,7 @@ class TestFormFields(TestCase):
                                          slug='group_for_test',
                                          description='Группа для теста')
 
-        cls.post = Post.objects.create(text='Информативный тестовый пост '*3,
+        cls.post = Post.objects.create(text='Информативный тестовый пост ' * 3,
                                        author=User.objects.get(id=100),
                                        group=Group.objects.get(id=100))
 
@@ -49,4 +49,3 @@ class TestFormFields(TestCase):
         post = TestFormFields.post
         expected_object_name = post.text[:15]
         self.assertEqual(expected_object_name, str(post))
-
