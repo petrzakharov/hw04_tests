@@ -15,15 +15,15 @@ class Group(models.Model):
 
 
 class Post(models.Model):
-    text: TextField = models.TextField(verbose_name='Текст поста',
-                                       help_text='Поле для ввода текста поста')
+    text: TextField = models.TextField(verbose_name="Текст поста",
+                                       help_text="Поле для ввода текста поста")
     pub_date = models.DateTimeField("date published", auto_now_add=True)
     author = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="posts")
     group = models.ForeignKey(
-        "Group", related_name='posts', blank=True,
-        null=True, on_delete=models.SET_NULL, verbose_name='Группа',
-        help_text='Поле для ввода группы публикции')
+        "Group", related_name="posts", blank=True,
+        null=True, on_delete=models.SET_NULL, verbose_name="Группа",
+        help_text="Поле для ввода группы публикции")
 
     class Meta:
         ordering = ["-pub_date"]
