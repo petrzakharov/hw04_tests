@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.flatpages.models import FlatPage
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -8,10 +9,6 @@ from posts.models import Group, Post
 class StaticURLTests(TestCase):
     def setUp(self):
         self.guest_client = Client()
-
-    def test_homepage(self):
-        response = self.guest_client.get(reverse("index"))
-        self.assertEqual(response.status_code, 200)
 
     def test_about(self):
         """
@@ -45,52 +42,43 @@ class NoStaticURLTests(TestCase):
                                        author=cls.user)
 
         cls.all_urls = \
-            dict(authorized_user={reverse("index"): 200,
-                                  reverse("new_post"): 200,
-                                  reverse("group_list",
-                                          kwargs={
-                                              "slug": "group_for_test"}
-                                          ): 200,
-                                  reverse("profile",
-                                          kwargs={
-                                              "username": "TestUser"}
-                                          ): 200,
-                                  reverse("post",
-                                          kwargs={
-                                              "username": "TestUser",
-                                              "post_id": 100}
-                                          ): 200,
-                                  reverse("post_edit",
-                                          kwargs={
-                                              "username": "TestUser",
-                                              "post_id": 100}
-                                          ): 200,
-                                  reverse("post_edit",
-                                          kwargs={
-                                              "username": "user_without_posts",
-                                              "post_id": 100}
-                                          ): 404,
-
-                                  },
-                 anonymous_user={
-                reverse("new_post"): 302,
-                reverse("post_edit",
-                        kwargs={"username": "TestUser",
-                                "post_id": 100}
-                        ): 302
-            })
-        cls.templates_url = {
-            "index.html": reverse("index"),
-            "group.html": reverse("group_list",
-                                  kwargs={"slug": "group_for_test"}
-                                  ),
-            "new.html": reverse("new_post"),
-            "new.html": reverse("post_edit",
-                                  kwargs={"username": "TestUser",
-                                          "post_id": 100}
-                                  )
-
-        }
+            dict(
+                authorized_user={
+                    reverse("index"): 200,
+                    reverse("new_post"): 200,
+                    reverse("group_list",
+                            kwargs={"slug": cls.group.slug}): 200,
+                    reverse("profile", kwargs={"username":
+                                               cls.user.username}): 200,
+                    reverse("post", kwargs={"username":
+                                            cls.user.username,
+                                            "post_id": cls.post.id}): 200,
+                    reverse("post_edit", kwargs={"username":
+                                                 cls.user.username,
+                                                 "post_id": cls.post.id}): 200,
+                },
+                anonymous_user={
+                    reverse("new_post"): 302,
+                    reverse("post_edit", kwargs={"username":
+                                                 cls.user.username,
+                                                 "post_id": cls.post.id}): 302
+                })
+        cls.templates_url = \
+            {
+                "index.html":
+                    reverse("index"),
+                "group.html":
+                    reverse("group_list", kwargs={"slug": cls.group.slug}),
+                "new.html":
+                    reverse("new_post"),
+                "new.html":
+                    reverse("post_edit", kwargs={"username":
+                                                 cls.user.username,
+                                                 "post_id": cls.post.id}
+                            )
+            }
+        cls.post_edit_url = list(
+            cls.all_urls["authorized_user"].items())[-1][0]
 
     def setUp(self):
         super().setUp()
@@ -117,14 +105,38 @@ class NoStaticURLTests(TestCase):
                 response = self.authorized_client.get(url)
                 self.assertTemplateUsed(response, template, url)
 
+    def test_redirect_for_edit_post_anonymous_user(self):
+        response = self.guest_client.get(NoStaticURLTests.post_edit_url)
+        url_redirect = reverse("post",
+                               kwargs={"username":
+                                       NoStaticURLTests.user.username,
+                                       "post_id": NoStaticURLTests.post.id})
+        self.assertRedirects(response, url_redirect)
 
-    #дописать здесь тестирование редиректов (посмотреть как правильно)
-    #Отдельно написать функцию для тестирования редактирования поста от другого юзера
-        #авторизовать клиент под юзером без постов
+    def test_url_response_for_edit_post_under_no_author_user(self):
+        self.authorized_client.force_login(
+            NoStaticURLTests.user_without_posts)
+        url = NoStaticURLTests.post_edit_url
+        response = self.authorized_client.get(url)
+        self.assertEqual(response.status_code, 302, url)
 
-    #дописать тестирование flatpages (посмотреть как правильно в слаке)
-    #вынести большие словари в глобальные переменные в самое начало файла,
-        #чтобы код смотрелся красивее
+    def test_redirect_for_edit_post_under_no_author_user(self):
+        self.authorized_client.force_login(
+            NoStaticURLTests.user_without_posts)
+        response = self.authorized_client.get(NoStaticURLTests.post_edit_url)
+        url_redirect = reverse("post",
+                               kwargs={"username":
+                                       NoStaticURLTests.user.username,
+                                       "post_id": NoStaticURLTests.post.id})
+        self.assertRedirects(response, url_redirect)
 
-    #написать докстринги к каждой функции во всех тестах
-    #написать
+    # дописать здесь тестирование редиректов (посмотреть как правильно)
+    # Отдельно написать функцию для тестирования редактирования поста от другого юзера
+    # авторизовать клиент под юзером без постов
+
+    # дописать тестирование flatpages (посмотреть как правильно в слаке)
+    # вынести большие словари в глобальные переменные в самое начало файла,
+    # чтобы код смотрелся красивее
+
+    # написать докстринги к каждой функции во всех тестах
+    # написать

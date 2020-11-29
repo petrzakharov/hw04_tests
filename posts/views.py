@@ -71,7 +71,6 @@ def post_view(request, username, post_id):
                                          "author": user})
 
 
-@login_required
 def post_edit(request, username, post_id):
     user = get_object_or_404(User, username=username)
     post = get_object_or_404(user.posts, pk=post_id)
