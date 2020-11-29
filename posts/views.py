@@ -1,34 +1,23 @@
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.http import HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import PostForm
 from .models import Group, Post, User
 
-# def index(request):
-#     latest = Post.objects.all()[:11]
-#     return render(request, "index.html", {"posts": latest})
-
 
 def index(request):
     post_list = Post.objects.order_by("-pub_date").all()
-    paginator = Paginator(post_list, 10)  # показывать 10 записей на странице.
+    paginator = Paginator(post_list, 10)
     page_number = request.GET.get(
-        "page")  # переменная в URL с номером запрошенной страницы
+        "page")
     page = paginator.get_page(
-        page_number)  # получить записи с нужным смещением
+        page_number)
     return render(
         request,
         "index.html",
         {"page": page, "paginator": paginator}
     )
-
-
-# def group_posts(request, slug):
-#     group = get_object_or_404(Group, slug=slug)
-#     posts = group.posts.all()[:12]
-#     return render(request, "group.html", {"group": group, "posts": posts})
 
 
 def group_posts(request, slug):

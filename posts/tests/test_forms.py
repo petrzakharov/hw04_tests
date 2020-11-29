@@ -5,12 +5,6 @@ from django.urls import reverse
 from posts.forms import PostForm
 from posts.models import Group, Post
 
-"""
-1. Проверка, что создается запись, проверить количество записей
-2. Переадресация формы
-3. Переопределенный help texts и лейблы
-
-"""
 
 class PostFormTest(TestCase):
     @classmethod
@@ -63,6 +57,18 @@ class PostFormTest(TestCase):
             data=form_data,
             follow=True
         )
-        self.assertRedirects(response, "/")
+        self.assertRedirects(response, reverse("index"))
         self.assertEqual(Post.objects.count(), posts_count + 1)
 
+    def test_edit_post_in_group(self):
+        form_data = {
+            "group": PostFormTest.post.group,
+            "text": PostFormTest.post.text + "_updated!"
+        }
+        self.authorized_client.post(
+            reverse("post_edit", kwargs={"username":
+                                         PostFormTest.user.username,
+                                         "post_id": PostFormTest.post.id}),
+            data=form_data, follow=True)
+        self.assertEqual(form_data["text"],
+                         PostFormTest.post.text + "_updated!")

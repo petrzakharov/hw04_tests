@@ -62,18 +62,18 @@ class NoStaticURLTests(TestCase):
                     reverse("group_list",
                             kwargs={"slug": cls.group.slug}): 200,
                     reverse("profile", kwargs={"username":
-                                                   cls.user.username}): 200,
+                                               cls.user.username}): 200,
                     reverse("post", kwargs={"username":
-                                                cls.user.username,
+                                            cls.user.username,
                                             "post_id": cls.post.id}): 200,
                     reverse("post_edit", kwargs={"username":
-                                                     cls.user.username,
+                                                 cls.user.username,
                                                  "post_id": cls.post.id}): 200,
                 },
                 anonymous_user={
                     reverse("new_post"): 302,
                     reverse("post_edit", kwargs={"username":
-                                                     cls.user.username,
+                                                 cls.user.username,
                                                  "post_id": cls.post.id}): 302
                 })
         cls.templates_url = \
@@ -86,9 +86,11 @@ class NoStaticURLTests(TestCase):
                     reverse("new_post"),
                 "new.html":
                     reverse("post_edit", kwargs={"username":
-                                                     cls.user.username,
-                                                 "post_id": cls.post.id}
-                            )
+                                                 cls.user.username,
+                                                 "post_id": cls.post.id}),
+                "profile.html":
+                    reverse("profile", kwargs={"username":
+                                               cls.user.username}),
             }
         cls.post_edit_url = list(
             cls.all_urls["authorized_user"].items())[-1][0]
@@ -122,7 +124,7 @@ class NoStaticURLTests(TestCase):
         response = self.guest_client.get(NoStaticURLTests.post_edit_url)
         url_redirect = reverse("post",
                                kwargs={"username":
-                                           NoStaticURLTests.user.username,
+                                       NoStaticURLTests.user.username,
                                        "post_id": NoStaticURLTests.post.id})
         self.assertRedirects(response, url_redirect)
 
@@ -139,6 +141,6 @@ class NoStaticURLTests(TestCase):
         response = self.authorized_client.get(NoStaticURLTests.post_edit_url)
         url_redirect = reverse("post",
                                kwargs={"username":
-                                           NoStaticURLTests.user.username,
+                                       NoStaticURLTests.user.username,
                                        "post_id": NoStaticURLTests.post.id})
         self.assertRedirects(response, url_redirect)

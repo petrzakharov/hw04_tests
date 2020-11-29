@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.contrib.flatpages.models import FlatPage, Site
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -7,75 +8,136 @@ from posts.models import Group, Post
 
 
 class PageTest(TestCase):
+    """
+    Тесты шаблонов проводятся в файле test_urls.py
+    """
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.user = get_user_model().objects.create_user(username="TestUser")
 
-        cls.group = Group.objects.create(id=100,
-                                         title="Группа для теста",
-                                         slug="group_for_test",
-                                         description="Группа для теста")
+        cls.group = Group.objects.create(
+            id=100,
+            title="Группа для теста",
+            slug="group_for_test",
+            description="Группа для теста")
 
-        cls.post = Post.objects.create(text="Информативный тестовый пост",
-                                       author=cls.user,
-                                       group=Group.objects.get(id=100))
+        cls.post = Post.objects.create(
+            text="Информативный тестовый пост",
+            author=cls.user,
+            group=Group.objects.get(id=cls.group.id))
+
+        cls.form_fields = {
+            "text": forms.fields.CharField,
+            "group": forms.models.ModelChoiceField
+        }
+        flat_site = Site.objects.get(pk=2)
+
+        cls.page_about_author = FlatPage.objects.create(
+            url='/about-author/',
+            title='about-author',
+            content='about-author'
+        )
+
+        cls.page_about_spec = FlatPage.objects.create(
+            url='/about-spec/',
+            title='about-spec',
+            content='about-spec'
+        )
+        cls.page_about_author.sites.add(flat_site)
+        cls.page_about_spec.sites.add(flat_site)
+
+        cls.other_group = Group.objects.create(
+            id=101,
+            title="Еще одна группа для теста",
+            slug="add_new_one_group_for_test",
+            description="Еще одна группа для теста")
 
     def setUp(self):
         super().setUp()
         self.authorized_client = Client()
         self.authorized_client.force_login(PageTest.user)
 
-    def test_pages_uses_correct_template(self):
-        """URL-адрес использует соответствующий шаблон."""
-        # Собираем в словарь пары "имя_html_шаблона: name"
-        templates_pages_names = {
-            "index.html": reverse("index"),
-            "new.html": reverse("new_post"),
-            "group.html": (
-                reverse("group_list", kwargs={"slug": "group_for_test"})
-            ),
-        }
-        # Проверяем, что при обращении к name вызывается
-        # соответствующий HTML-шаблон
-        for template, reverse_name in templates_pages_names.items():
-            with self.subTest(reverse_name=reverse_name):
-                response = self.authorized_client.get(reverse_name)
-                self.assertTemplateUsed(response, template, template)
-
     def test_new_post_page_correct_context(self):
         response = self.authorized_client.get(reverse("new_post"))
-        form_fields = {
-            "text": forms.fields.CharField,
-            "group": forms.models.ModelChoiceField
-        }
-        for value, expected in form_fields.items():
+        for value, expected in PageTest.form_fields.items():
             with self.subTest(value=value):
                 form_field = response.context.get("form").fields.get(value)
-                # Проверяет, что поле формы является экземпляром
-                # указанного класса
                 self.assertIsInstance(form_field, expected)
 
     def test_index_page_correct_context(self):
+        """Шаблон главной страницы с правильным контекстом"""
         response = self.authorized_client.get(reverse("index"))
-        self.assertEqual(response.context.get("posts")[0].text,
-                         PageTest.post.text)
-        self.assertEqual(response.context.get("posts")[0].author,
-                         PageTest.post.author)
-        self.assertEqual(response.context.get("posts")[0].pub_date,
-                         PageTest.post.pub_date)
-        self.assertEqual(response.context.get("posts")[0].group,
-                         PageTest.post.group)
+        self.assertEqual(response.context.get("page")[0].id,
+                         PageTest.post.id)
 
     def test_group_page_correct_context(self):
         response = self.authorized_client.get(
             reverse("group_list",
                     kwargs={"slug": "group_for_test"}))
-        self.assertEqual(response.context.get("group").title,
-                         PageTest.group.title)
-        self.assertEqual(response.context.get("group").slug,
-                         PageTest.group.slug)
-        self.assertEqual(response.context.get("group").description,
-                         PageTest.group.description)
+        self.assertEqual(response.context.get("group").id,
+                         PageTest.group.id)
 
-# python3 manage.py test posts.tests.test_views.PageTest.test_new_post_page_correct_context
+    def test_created_post_appear_on_index_page(self):
+        response = self.authorized_client.get(reverse("index"))
+        post_from_context = response.context.get("page")[0]
+        self.assertEqual(post_from_context, PageTest.post)
+
+    def test_created_post_appear_on_group_page(self):
+        response = self.authorized_client.get(
+            reverse("group_list",
+                    kwargs={"slug": "group_for_test"}))
+        post_from_context = response.context.get("page")[0]
+        self.assertEqual(post_from_context, PageTest.post,
+                         msg='пост попал в корректную группу')
+
+    def test_created_post_not_appear_on_other_group_page(self):
+        response = self.authorized_client.get(
+            reverse("group_list",
+                    kwargs={"slug": "add_new_one_group_for_test"}))
+        try:
+            post_from_context = response.context.get("page")[0]
+        except IndexError:
+            post_from_context = None
+        self.assertNotEqual(post_from_context, PageTest.post,
+                            msg='пост не попал в некорректную группу')
+
+    def test_post_edit_has_correct_context(self):
+        response = self.authorized_client.get(
+            reverse("post_edit", kwargs={"username": PageTest.user.username,
+                                         "post_id": PageTest.post.id}))
+        for value, expected in PageTest.form_fields.items():
+            with self.subTest(value=value):
+                form_field = response.context.get("form").fields.get(value)
+                self.assertIsInstance(form_field, expected)
+
+    def test_user_profile_has_correct_context(self):
+        response = self.authorized_client.get(
+            reverse("profile", kwargs={
+                    "username": PageTest.user.username}))
+        post_from_context = response.context.get("page")[0]
+        self.assertEqual(post_from_context, PageTest.post)
+        self.assertEqual(post_from_context.author, PageTest.post.author)
+
+    def test_post_page_has_correct_context(self):
+        response = self.authorized_client.get(
+            reverse("post", kwargs={
+                    "username": PageTest.user.username,
+                    "post_id": PageTest.post.id}))
+        post_from_context = response.context.get("post")
+        self.assertEqual(post_from_context.author, PageTest.post.author)
+        self.assertEqual(post_from_context, PageTest.post)
+
+    def test_paginator_on_index_page(self):
+        response = self.authorized_client.get(reverse("index"))
+        self.assertEqual(response.context.get("paginator").num_pages, 1)
+
+    def test_flatpage_about_author_has_correct_context(self):
+        response = self.authorized_client.get(PageTest.page_about_author.url)
+        self.assertEqual(response.context.get("flatpage").id,
+                         PageTest.page_about_author.id)
+
+    def test_flatpage_about_spec_has_correct_context(self):
+        response = self.authorized_client.get(PageTest.page_about_spec.url)
+        self.assertEqual(response.context.get("flatpage").id,
+                         PageTest.page_about_spec.id)
