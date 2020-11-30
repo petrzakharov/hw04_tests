@@ -12,14 +12,13 @@ class PostFormTest(TestCase):
         super().setUpClass()
         cls.user = get_user_model().objects.create_user(username="TestUser")
 
-        cls.group = Group.objects.create(id=100,
-                                         title="Группа для теста",
+        cls.group = Group.objects.create(title="Группа для теста",
                                          slug="group_for_test",
                                          description="Группа для теста")
 
         cls.post = Post.objects.create(text="Информативный тестовый пост",
                                        author=cls.user,
-                                       group=Group.objects.get(id=100))
+                                       group=cls.group)
 
         cls.form = PostForm()
 

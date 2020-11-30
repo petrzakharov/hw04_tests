@@ -39,22 +39,27 @@ class StaticURLTests(TestCase):
 
 
 class NoStaticURLTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.guest_client = Client()
+        self.authorized_client = Client()
+        self.authorized_client.force_login(NoStaticURLTests.user)
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.user = get_user_model().objects.create_user(username="TestUser")
-        cls.user_without_posts = \
+        cls.user_without_posts = (
             get_user_model().objects.create_user(username="user_without_posts")
+        )
 
-        cls.group = Group.objects.create(id=100,
-                                         title="Группа для теста",
+        cls.group = Group.objects.create(title="Группа для теста",
                                          slug="group_for_test",
                                          description="Группа для теста")
-        cls.post = Post.objects.create(id=100,
-                                       text="Test post",
+        cls.post = Post.objects.create(text="Test post",
                                        author=cls.user)
 
-        cls.all_urls = \
+        cls.all_urls = (
             dict(
                 authorized_user={
                     reverse("index"): 200,
@@ -75,8 +80,8 @@ class NoStaticURLTests(TestCase):
                     reverse("post_edit", kwargs={"username":
                                                  cls.user.username,
                                                  "post_id": cls.post.id}): 302
-                })
-        cls.templates_url = \
+                }))
+        cls.templates_url = (
             {
                 "index.html":
                     reverse("index"),
@@ -91,15 +96,9 @@ class NoStaticURLTests(TestCase):
                 "profile.html":
                     reverse("profile", kwargs={"username":
                                                cls.user.username}),
-            }
+            })
         cls.post_edit_url = list(
             cls.all_urls["authorized_user"].items())[-1][0]
-
-    def setUp(self):
-        super().setUp()
-        self.guest_client = Client()
-        self.authorized_client = Client()
-        self.authorized_client.force_login(NoStaticURLTests.user)
 
     def test_urls_response_anonymous_user(self):
         for url, code in (NoStaticURLTests.all_urls["anonymous_user"]).items():
@@ -108,8 +107,8 @@ class NoStaticURLTests(TestCase):
                 self.assertEqual(response.status_code, code, url)
 
     def test_urls_response_authorized_user(self):
-        for url, code in \
-                (NoStaticURLTests.all_urls["authorized_user"]).items():
+        for url, code in (
+                (NoStaticURLTests.all_urls["authorized_user"]).items()):
             with self.subTest():
                 response = self.authorized_client.get(url)
                 self.assertEqual(response.status_code, code, url)

@@ -7,8 +7,8 @@ from .models import Group, Post, User
 
 
 def index(request):
-    post_list = Post.objects.order_by("-pub_date").all()
-    paginator = Paginator(post_list, 10)
+    posts = Post.objects.all()
+    paginator = Paginator(posts, 10)
     page_number = request.GET.get(
         "page")
     page = paginator.get_page(
@@ -54,15 +54,13 @@ def profile(request, username):
 
 
 def post_view(request, username, post_id):
-    user = get_object_or_404(User, username=username)
-    post = get_object_or_404(user.posts, pk=post_id)
+    post = get_object_or_404(Post, id=post_id, author__username=username)
     return render(request, "post.html", {"post": post,
-                                         "author": user})
+                                         "author": post.author})
 
 
 def post_edit(request, username, post_id):
-    user = get_object_or_404(User, username=username)
-    post = get_object_or_404(user.posts, pk=post_id)
+    post = get_object_or_404(Post, id=post_id, author__username=username)
     if post.author != request.user:
         return redirect("post", username, post_id)
     form = PostForm(request.POST or None, instance=post)
