@@ -34,7 +34,7 @@ class StaticURLTests(TestCase):
         """
         Тестирование страницы Технологии
         """
-        response = self.guest_client.get("/about-spec/")
+        response = self.guest_client.get(self.page_about_spec.url)
         self.assertEqual(response.status_code, 200)
 
 

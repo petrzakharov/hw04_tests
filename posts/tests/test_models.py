@@ -9,8 +9,7 @@ class TestFormFields(TestCase):
         super().setUpClass()
         cls.user = User.objects.create_user(username="test_user",
                                             email="test@test.com",
-                                            password="test",
-                                            id=100)
+                                            password="test")
 
         cls.group = Group.objects.create(id=100,
                                          title="Группа для теста",
@@ -18,8 +17,8 @@ class TestFormFields(TestCase):
                                          description="Группа для теста")
 
         cls.post = Post.objects.create(text="Информативный тестовый пост " * 3,
-                                       author=User.objects.get(id=100),
-                                       group=Group.objects.get(id=100))
+                                       author=cls.user,
+                                       group=cls.group)
 
     def test_verbose_name(self):
         post = TestFormFields.post

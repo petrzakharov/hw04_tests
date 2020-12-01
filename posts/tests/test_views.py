@@ -17,7 +17,6 @@ class PageTest(TestCase):
         cls.user = get_user_model().objects.create_user(username="TestUser")
 
         cls.group = Group.objects.create(
-            id=100,
             title="Группа для теста",
             slug="group_for_test",
             description="Группа для теста")
@@ -25,7 +24,7 @@ class PageTest(TestCase):
         cls.post = Post.objects.create(
             text="Информативный тестовый пост",
             author=cls.user,
-            group=Group.objects.get(id=cls.group.id))
+            group=cls.group)
 
         cls.form_fields = {
             "text": forms.fields.CharField,
@@ -48,7 +47,6 @@ class PageTest(TestCase):
         cls.page_about_spec.sites.add(flat_site)
 
         cls.other_group = Group.objects.create(
-            id=101,
             title="Еще одна группа для теста",
             slug="add_new_one_group_for_test",
             description="Еще одна группа для теста")
