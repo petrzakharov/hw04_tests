@@ -4,6 +4,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from posts.models import Group, Post
+from datetime import datetime
 
 
 class StaticURLTests(TestCase):
@@ -143,3 +144,7 @@ class NoStaticURLTests(TestCase):
                                        NoStaticURLTests.user.username,
                                        "post_id": NoStaticURLTests.post.id})
         self.assertRedirects(response, url_redirect)
+
+    def test_404_error_raise(self):
+        response = self.authorized_client.get(hash(datetime.now()))
+        self.assertEqual(response.status_code, 404)
