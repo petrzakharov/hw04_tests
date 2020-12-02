@@ -11,8 +11,7 @@ class TestFormFields(TestCase):
                                             email="test@test.com",
                                             password="test")
 
-        cls.group = Group.objects.create(id=100,
-                                         title="Группа для теста",
+        cls.group = Group.objects.create(title="Группа для теста",
                                          slug="group_for_test",
                                          description="Группа для теста")
 
